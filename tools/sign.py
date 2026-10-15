@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -67,6 +68,9 @@ def load_credentials(path: pathlib.Path) -> tuple[str, str]:
     api_key, api_secret = data.get("api_key"), data.get("api_secret")
     if not (isinstance(api_key, str) and api_key and isinstance(api_secret, str) and api_secret):
         fail(f"{path} に api_key と api_secret（空でない文字列）が必要です。")
+    # AMO が発行する形式（mozilla/addons-server の src/olympia/api/models.py）と違えば、提出前に止める
+    if not re.fullmatch(r"user:\d+:\d+", api_key) or not re.fullmatch(r"[0-9a-f]{64,}", api_secret):
+        fail(f"{path} の値が AMO の API キーの形式と違います。tools/save_amo_credentials.py で保存し直してください。")
     return api_key, api_secret
 
 
@@ -173,7 +177,8 @@ def main() -> int:
             return 0
     print(
         "署名済みの .xpi を取得できませんでした。"
-        f"アップロード済みの可能性があるため、再実行する前に AMO の開発者ハブで {addon_id} の {version} を確認してください。"
+        "web-ext のエラーが \"Upload failed\" なら、アップロードの段階で失敗しており提出されていません。"
+        f"それ以外は提出済みの可能性があるため、再実行する前に AMO の開発者ハブで {addon_id} の {version} を確認してください。"
         "（同じ版番号は再提出できません）",
         file=sys.stderr,
     )

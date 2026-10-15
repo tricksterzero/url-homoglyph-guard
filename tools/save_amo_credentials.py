@@ -14,6 +14,7 @@ import getpass
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -23,6 +24,7 @@ CURRENT_USER = f"{os.environ['USERDOMAIN']}\\{os.environ['USERNAME']}"
 # セキュリティ記述子を SID で読み出す。対象のパスは環境変数 ACL_TARGET で受け取る
 ACL_SCRIPT = """
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $sidType = [System.Security.Principal.SecurityIdentifier]
 $acl = Get-Acl -LiteralPath $env:ACL_TARGET
 $rules = @($acl.GetAccessRules($true, $true, $sidType) | ForEach-Object {
@@ -43,7 +45,8 @@ def fail(message: str) -> "NoReturn":
 
 
 def icacls(*args: str) -> None:
-    result = subprocess.run(["icacls", *args], capture_output=True, text=True)
+    # 出力はコンソールの文字コード（日本語環境では cp932）で返るため、文字列として読まずに終了コードだけを見る
+    result = subprocess.run(["icacls", *args], capture_output=True)
     if result.returncode != 0:
         fail(f"icacls {args[0]} が失敗しました（終了コード {result.returncode}）")
 
@@ -53,12 +56,15 @@ def read_acl(path: pathlib.Path) -> dict:
     result = subprocess.run(
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
         capture_output=True,
-        text=True,
         env={**os.environ, "ACL_TARGET": str(path)},
     )
     if result.returncode != 0:
         fail(f"{path} の権限を読み取れませんでした")
-    return json.loads(result.stdout)
+    # 標準出力はスクリプト内で UTF-8 に指定している。標準エラー出力は使わない
+    try:
+        return json.loads(result.stdout.decode("utf-8"))
+    except ValueError:
+        fail(f"{path} の権限の読み取り結果を解釈できませんでした")
 
 
 def ensure_only_current_user(path: pathlib.Path, *, require_protected: bool) -> None:
@@ -83,6 +89,16 @@ def main() -> int:
     api_secret = getpass.getpass("JWT secret (api_secret, 入力は表示されません): ").strip()
     if not api_key or not api_secret:
         fail("両方の値が必要です。")
+    # AMO は issuer を "user:<数字>:<数字>"、secret を乱数の 16 進表記で発行する
+    # （mozilla/addons-server の src/olympia/api/models.py、generate_secret）。
+    # 画面上で伏せ字（. など）になった部分をコピーした値などを、保存前にはじく
+    if not re.fullmatch(r"user:\d+:\d+", api_key):
+        fail("JWT issuer の形式が違います（user:<数字>:<数字> の形式のはずです）。")
+    if not re.fullmatch(r"[0-9a-f]{64,}", api_secret):
+        fail(
+            "JWT secret の形式が違います（0-9 と a-f だけの 64 文字以上のはずです）。"
+            "画面で伏せ字になった部分をコピーしていないか確認してください。"
+        )
 
     # 既存ファイルの権限に依存しないよう、新しいファイルに書いてから置き換える
     temporary = directory / f"credentials.{os.getpid()}.tmp"
