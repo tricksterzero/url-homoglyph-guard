@@ -8,30 +8,27 @@
 </head>
 <body>
   <main>
-    <p class="badge">URL Homoglyph Guard</p>
-    <h1 class="plain">設定の確認</h1>
+    <div class="title">
+      <h1>URL Homoglyph Guard の設定</h1>
+    </div>
 
-    <section>
-      <h2>すべてのサイトへのアクセス</h2>
-      <p class="lead">
-        開こうとしたページのドメインを読み込み前に確認するため、すべてのサイトへのアクセスを許可してください。
-        ページの内容を読んだり、外部へ送信したりはしません。
-      </p>
-      <p id="host-status"></p>
-      <div class="actions">
-        <button type="button" class="primary" id="grant">許可する</button>
-      </div>
-    </section>
+    <h2>すべてのサイトへのアクセス</h2>
+    <p>
+      開こうとしたページのドメインを読み込み前に確認するため、すべてのサイトへのアクセスを許可してください。
+      ページの内容を読んだり、外部へ送信したりはしません。
+    </p>
+    <p class="note" id="host-status"></p>
+    <div class="buttons start">
+      <button type="button" class="primary" id="grant">許可する</button>
+    </div>
 
-    <section>
-      <h2>プライベートウィンドウ</h2>
-      <p class="lead">
-        Firefox の拡張機能は、既定ではプライベートウィンドウで動きません。プライベートウィンドウでも警告するには、
-        アドオンの管理画面（about:addons）でこの拡張機能の詳細を開き、プライベートウィンドウでの実行を許可してください
-        （<a href="https://support.mozilla.org/kb/extensions-private-browsing" target="_blank" rel="noopener noreferrer">Mozilla の説明</a>）。
-      </p>
-      <p id="incognito-status"></p>
-    </section>
+    <h2>プライベートウィンドウ</h2>
+    <p>
+      Firefox の拡張機能は、既定ではプライベートウィンドウで動きません。プライベートウィンドウでも警告するには、
+      アドオンの管理画面（about:addons）でこの拡張機能の詳細を開き、プライベートウィンドウでの実行を許可してください
+      （<a href="https://support.mozilla.org/kb/extensions-private-browsing" target="_blank" rel="noopener noreferrer">Mozilla の説明</a>）。
+    </p>
+    <p class="note" id="incognito-status"></p>
   </main>
   <script src="setup.js"></script>
 </body>

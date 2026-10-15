@@ -16,11 +16,12 @@ const SCRIPT_LABELS = {
   Arabic: "アラビア文字",
   Hebrew: "ヘブライ文字",
 };
+const MAX_CHARS_IN_SUMMARY = 3;
 
 const $ = (id) => document.getElementById(id);
-const scriptLabel = (name) => SCRIPT_LABELS[name] ?? name;
-
 const params = new URLSearchParams(location.search);
+const scriptLabel = (name) => SCRIPT_LABELS[name] ?? name;
+const isAscii = (text) => /^[\x00-\x7f]*$/.test(text);
 
 function parseTarget(raw) {
   if (!raw) return null;
@@ -32,10 +33,10 @@ function parseTarget(raw) {
   }
 }
 
-// ASCII 以外の文字を <mark> で強調してホスト名を描く
-function renderHighlightedHost(container, text) {
+// ASCII 以外の文字を <mark> で強調して書き込む
+function appendHighlighted(container, text) {
   for (const ch of text) {
-    if (/^[\x00-\x7f]$/.test(ch)) {
+    if (isAscii(ch)) {
       container.append(ch);
     } else {
       const mark = document.createElement("mark");
@@ -46,28 +47,55 @@ function renderHighlightedHost(container, text) {
   }
 }
 
-// 理由の文を組み立てる。ラベルは ASCII 以外の文字を強調し、Punycode 表記を併記する。
+function findingsOf(result, type) {
+  return result.labels.flatMap((label) => label.findings.filter((f) => f.type === type).map((f) => ({ label, f })));
+}
+
+// 冒頭の一文。実際の文字から「どの文字が何なのか」を具体的に書く
+function summaryText(result) {
+  const chars = result.labels.flatMap((l) => l.chars);
+  if (findingsOf(result, "ascii-lookalike").length) {
+    const described = chars
+      .filter((c) => c.prototype && isAscii(c.prototype) && c.scripts.length)
+      .slice(0, MAX_CHARS_IN_SUMMARY)
+      .map((c) => `「${c.char}」（${c.codePoint}）は英字の ${c.prototype} ではなく${scriptLabel(c.scripts[0])}`);
+    const rest = chars.length - described.length;
+    const detail = described.length
+      ? `${described.join("、")}${rest > 0 ? `（ほか ${rest} 文字）` : ""}です。`
+      : "英字によく似た別の文字を含みます。";
+    return `${detail}${result.lookalikeHostname} とは別のサイトです。`;
+  }
+  if (findingsOf(result, "ascii-lookalike-marks").length) {
+    return `アクセントなどの小さな記号が付いた文字を含みます。記号を除くと ${result.lookalikeHostname} と同じ見た目ですが、別のサイトです。`;
+  }
+  const mixed = findingsOf(result, "mixed-script")[0];
+  if (mixed) {
+    return `${mixed.f.scripts.map(scriptLabel).join("・")}が混ざっています。正規のドメインではまれな組み合わせです。`;
+  }
+  return "このドメインの表記（Punycode）を正しく読み取れませんでした。";
+}
+
 function renderReason(li, label, finding) {
   const appendLabel = () => {
     li.append("「");
-    renderHighlightedHost(li, label.unicode);
-    li.append(`」(${label.ascii})`);
+    appendHighlighted(li, label.unicode);
+    li.append(`」（${label.ascii}）`);
   };
   switch (finding.type) {
     case "ascii-lookalike":
       appendLabel();
-      li.append(`は、見た目が ASCII の「${finding.lookalike}」とほぼ同じですが、別の文字を含む別のドメインです。`);
+      li.append(`は、英字以外の文字を含みますが、見た目は「${finding.lookalike}」とほぼ同じです。`);
       break;
     case "ascii-lookalike-marks":
       appendLabel();
-      li.append(`は、アクセントなどの小さな記号を除くと ASCII の「${finding.lookalike}」と同じに見えます。`);
+      li.append(`は、記号を除くと「${finding.lookalike}」と同じに見えます。`);
       break;
     case "mixed-script":
       appendLabel();
-      li.append(`には、${finding.scripts.map(scriptLabel).join("・")}が混在しています。正規のドメインではまれな組み合わせです。`);
+      li.append(`には、${finding.scripts.map(scriptLabel).join("・")}が混在しています。`);
       break;
     case "undecodable":
-      li.append(`「${label.ascii}」は Punycode として正しく解読できませんでした。`);
+      li.append(`「${label.ascii}」は Punycode として読み取れません。`);
       break;
     default:
       li.append(finding.type);
@@ -75,14 +103,12 @@ function renderReason(li, label, finding) {
 }
 
 function render(target, result) {
-  const hasLookalike = result.labels.some((l) =>
-    l.findings.some((f) => f.type === "ascii-lookalike" || f.type === "ascii-lookalike-marks")
-  );
-  $("lead").textContent = hasLookalike
-    ? "このドメインには、英字とよく似た別の文字が含まれています。よく知っているサイトに見えても、別のサイトの可能性があります。"
-    : "このドメインには、通常は一緒に使われない文字体系が混在しています。";
+  const hasLookalike =
+    findingsOf(result, "ascii-lookalike").length + findingsOf(result, "ascii-lookalike-marks").length > 0;
+  if (!hasLookalike) $("title").textContent = "通常は一緒に使われない文字を含むドメインです";
 
-  renderHighlightedHost($("unicode-host"), result.unicodeHostname);
+  appendHighlighted($("unicode-host"), result.unicodeHostname);
+  $("summary").textContent = summaryText(result);
   if (hasLookalike) {
     $("lookalike-host").textContent = result.lookalikeHostname;
   } else {
@@ -98,9 +124,6 @@ function render(target, result) {
       renderReason(li, label, finding);
       $("reasons").append(li);
     }
-  }
-
-  for (const label of result.labels) {
     for (const info of label.chars) {
       const tr = document.createElement("tr");
       const cells = [
@@ -120,8 +143,14 @@ function render(target, result) {
     }
   }
 
-  $("proceed-note").textContent =
-    `開いた場合、ブラウザを閉じるまで ${result.hostname} への警告は表示しません。`;
+  $("proceed-note").textContent = `開くと、ブラウザを閉じるまで ${result.hostname} では警告しません。`;
+}
+
+function toggleDetails() {
+  const open = $("details").hidden;
+  $("details").hidden = !open;
+  $("toggle-details").setAttribute("aria-expanded", String(open));
+  $("toggle-details").textContent = open ? "詳細を閉じる" : "詳細";
 }
 
 async function goBack() {
@@ -164,9 +193,10 @@ async function proceed(token) {
 
 async function init() {
   $("back").addEventListener("click", goBack);
+  $("toggle-details").addEventListener("click", toggleDetails);
   const target = parseTarget(params.get("url"));
   if (!target) {
-    $("lead").textContent = "警告対象の URL を読み取れませんでした。";
+    $("summary").textContent = "警告対象の URL を読み取れませんでした。";
     $("proceed").hidden = true;
     return;
   }

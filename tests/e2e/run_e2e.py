@@ -232,7 +232,7 @@ def check_basic(events: list[dict]) -> Checker:
         amazon.get("chars"),
     )
     after = c.first("afterProceed").get("lookalike", "")
-    c.expect("「危険を理解して開く」で元の URL へ進む", after.startswith(f"http://{AMAZON}:") and c.got("/typed"), after)
+    c.expect("「リスクを理解して開く」で元の URL へ進む", after.startswith(f"http://{AMAZON}:") and c.got("/typed"), after)
     again = c.first("allowedAgain").get("url", "")
     c.expect("許可したホストは再度警告しない", again.startswith(f"http://{AMAZON}:") and c.got("/again"), again)
     return c
@@ -317,7 +317,11 @@ def main() -> int:
     parser.add_argument("--firefox", default=r"C:\Program Files\Mozilla Firefox\firefox.exe")
     parser.add_argument("--screenshot", type=pathlib.Path, help="警告ページのスクリーンショットの保存先 (.png)")
     parser.add_argument("--only", choices=SCENARIOS.keys(), help="指定したシナリオだけ実行する")
+    parser.add_argument(
+        "--pref", action="append", default=[], metavar="KEY=VALUE", help="Firefox の設定を追加する（繰り返し可）"
+    )
     args = parser.parse_args()
+    extra_prefs = dict(item.split("=", 1) for item in args.pref)
 
     checkers = []
     with tempfile.TemporaryDirectory(prefix="url-sanitizer-e2e-") as tmp:
@@ -327,7 +331,7 @@ def main() -> int:
             server = LogServer()
             threading.Thread(target=server.serve_forever, daemon=True).start()
             ext_dir = prepare_extension(pathlib.Path(tmp), scenario, server)
-            prefs = {**prefs, "network.dns.localDomains": ",".join(PUNYCODE_HOSTS)}
+            prefs = {**prefs, "network.dns.localDomains": ",".join(PUNYCODE_HOSTS), **extra_prefs}
             finished = run_firefox(ext_dir, args.firefox, prefs, extra(server.port))
             server.shutdown()
             if not finished:
@@ -336,12 +340,16 @@ def main() -> int:
                     [{k: v for k, v in e.items() if k != "dataUrl"} for e in server.events], ensure_ascii=False, indent=2
                 ))
 
-            for event in server.events:
-                if event["event"] == "screenshot":
-                    data_url = event.pop("dataUrl")
-                    if args.screenshot:
-                        args.screenshot.write_bytes(base64.b64decode(data_url.split(",", 1)[1]))
-                        print(f"screenshot: {args.screenshot}")
+            # 1 枚目は指定したパス、2 枚目以降は "<名前>-<画面名>.png" に保存する
+            shots = [e for e in server.events if e["event"] == "screenshot"]
+            for index, event in enumerate(shots):
+                data_url = event.pop("dataUrl")
+                if args.screenshot:
+                    dest = args.screenshot if index == 0 else args.screenshot.with_stem(
+                        f"{args.screenshot.stem}-{event.get('name', index)}"
+                    )
+                    dest.write_bytes(base64.b64decode(data_url.split(",", 1)[1]))
+                    print(f"screenshot: {dest}")
             checkers.append(check(server.events))
 
     failed = False

@@ -33,7 +33,7 @@ async function run() {
       linkPage: await tabUrl(linkPage.id),
     });
 
-    // 警告ページの表示内容を読み、「危険を理解して開く」を押す
+    // 警告ページの表示内容を読み、「リスクを理解して開く」を押す
     const views = browser.extension.getViews({ type: "tab" });
     for (const view of views) {
       const doc = view.document;
@@ -48,10 +48,14 @@ async function run() {
     }
     await browser.tabs.update(lookalike.id, { active: true });
     await sleep(800);
-    await report("screenshot", { dataUrl: await browser.tabs.captureVisibleTab() });
+    await report("screenshot", { name: "summary", dataUrl: await browser.tabs.captureVisibleTab() });
 
+    // 「詳細」を開いた状態も撮ってから、「リスクを理解して開く」を押す
     const target = views.find((view) => view.location.href.includes("xn--mazon-3ve"));
-    target?.document.getElementById("proceed").click();
+    target.document.getElementById("toggle-details").click();
+    await sleep(500);
+    await report("screenshot", { name: "details", dataUrl: await browser.tabs.captureVisibleTab() });
+    target.document.getElementById("proceed").click();
     await sleep(3000);
     await report("afterProceed", { lookalike: await tabUrl(lookalike.id) });
 

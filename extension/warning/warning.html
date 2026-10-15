@@ -4,34 +4,40 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>紛らわしいドメインの警告</title>
+  <title>紛らわしいドメイン</title>
   <link rel="stylesheet" href="warning.css">
 </head>
 <body>
   <main>
-    <p class="badge">URL Homoglyph Guard</p>
-    <h1>このドメインは見た目を偽装している可能性があります</h1>
-    <p class="lead" id="lead"></p>
+    <div class="title">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.5 1.5 21h21Z" fill="var(--icon)"/>
+        <path d="M12 9v5.5" stroke="var(--icon-mark)" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="12" cy="17.6" r="1.25" fill="var(--icon-mark)"/>
+      </svg>
+      <h1 id="title">紛らわしい文字を含むドメインです</h1>
+    </div>
 
-    <section class="card" aria-labelledby="host-heading">
-      <h2 id="host-heading" class="visually-hidden">ドメインの比較</h2>
-      <dl class="hosts">
-        <dt>開こうとしたドメイン</dt>
-        <dd><span class="host-display" id="unicode-host"></span></dd>
-        <dt id="lookalike-term">似ているドメイン</dt>
-        <dd id="lookalike-desc"><span class="host-plain" id="lookalike-host"></span></dd>
-        <dt>実際のドメイン (Punycode)</dt>
-        <dd><code id="ascii-host"></code></dd>
-      </dl>
-    </section>
+    <p class="host" id="unicode-host"></p>
+    <p id="summary"></p>
 
-    <section aria-labelledby="reason-heading">
-      <h2 id="reason-heading">警告の理由</h2>
+    <dl class="compare">
+      <dt id="lookalike-term">似ているドメイン</dt>
+      <dd id="lookalike-desc"><span id="lookalike-host"></span></dd>
+      <dt>実際のドメイン</dt>
+      <dd><code id="ascii-host"></code></dd>
+    </dl>
+
+    <div class="buttons">
+      <button type="button" id="toggle-details" aria-expanded="false" aria-controls="details">詳細</button>
+      <button type="button" class="primary" id="back">戻る（推奨）</button>
+    </div>
+
+    <section id="details" hidden>
+      <h2>判定の理由</h2>
       <ul id="reasons"></ul>
-    </section>
 
-    <section aria-labelledby="chars-heading">
-      <h2 id="chars-heading">ASCII 以外の文字</h2>
+      <h2>英字以外の文字</h2>
       <div class="table-wrap">
         <table>
           <thead>
@@ -40,19 +46,16 @@
           <tbody id="chars"></tbody>
         </table>
       </div>
+
+      <h2>開こうとした URL</h2>
+      <p><code class="url" id="full-url"></code></p>
+
+      <p class="note" id="proceed-note"></p>
+      <div class="buttons start">
+        <button type="button" id="proceed">リスクを理解して開く</button>
+      </div>
+      <p class="error" id="error" hidden></p>
     </section>
-
-    <details>
-      <summary>開こうとした URL 全体</summary>
-      <code class="url" id="full-url"></code>
-    </details>
-
-    <div class="actions">
-      <button type="button" class="primary" id="back">開かずに戻る</button>
-      <button type="button" class="secondary" id="proceed">危険を理解して開く</button>
-    </div>
-    <p class="note" id="proceed-note"></p>
-    <p class="error" id="error" hidden></p>
   </main>
 
   <script src="../data/confusables.js"></script>
