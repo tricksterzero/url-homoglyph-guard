@@ -20,8 +20,9 @@ const SCRIPT_LABELS = {
 const $ = (id) => document.getElementById(id);
 const scriptLabel = (name) => SCRIPT_LABELS[name] ?? name;
 
-function parseTarget() {
-  const raw = new URLSearchParams(location.search).get("url");
+const params = new URLSearchParams(location.search);
+
+function parseTarget(raw) {
   if (!raw) return null;
   try {
     const url = new URL(raw);
@@ -57,6 +58,10 @@ function renderReason(li, label, finding) {
       appendLabel();
       li.append(`は、見た目が ASCII の「${finding.lookalike}」とほぼ同じですが、別の文字を含む別のドメインです。`);
       break;
+    case "ascii-lookalike-marks":
+      appendLabel();
+      li.append(`は、アクセントなどの小さな記号を除くと ASCII の「${finding.lookalike}」と同じに見えます。`);
+      break;
     case "mixed-script":
       appendLabel();
       li.append(`には、${finding.scripts.map(scriptLabel).join("・")}が混在しています。正規のドメインではまれな組み合わせです。`);
@@ -70,7 +75,9 @@ function renderReason(li, label, finding) {
 }
 
 function render(target, result) {
-  const hasLookalike = result.labels.some((l) => l.findings.some((f) => f.type === "ascii-lookalike"));
+  const hasLookalike = result.labels.some((l) =>
+    l.findings.some((f) => f.type === "ascii-lookalike" || f.type === "ascii-lookalike-marks")
+  );
   $("lead").textContent = hasLookalike
     ? "このドメインには、英字とよく似た別の文字が含まれています。よく知っているサイトに見えても、別のサイトの可能性があります。"
     : "このドメインには、通常は一緒に使われない文字体系が混在しています。";
@@ -126,24 +133,58 @@ async function goBack() {
   if (tab) await browser.tabs.remove(tab.id);
 }
 
-async function proceed(target) {
+function disableProceed(reason) {
+  $("proceed").hidden = true;
+  $("proceed-note").textContent = reason;
+}
+
+function showError(message) {
+  $("error").hidden = false;
+  $("error").textContent = message;
+}
+
+// 許可は、拡張機能がこのタブのために発行したトークンと引き換えにだけ行う。
+// 移動先もバックグラウンドが記録した URL を使い、このページの URL パラメーターは信用しない。
+async function proceed(token) {
   $("proceed").disabled = true;
   try {
-    await browser.runtime.sendMessage({ type: "allow-host", hostname: target.hostname });
-    location.replace(target.href);
+    const response = await browser.runtime.sendMessage({ type: "allow-host", token });
+    const url = parseTarget(response?.url);
+    if (!response?.ok || !url) {
+      disableProceed("この警告ページからは開けません。もう一度リンクを開き直してください。");
+      return;
+    }
+    location.replace(url.href);
   } catch (error) {
-    $("proceed").disabled = false;
-    $("error").hidden = false;
-    $("error").textContent = `許可の登録に失敗しました: ${error.message}`;
+    // トークンは消費済みの可能性があるので、再試行はさせずに開き直してもらう
+    disableProceed("許可を登録できませんでした。開く場合は、もう一度リンクを開き直してください。");
+    showError(`エラー: ${error.message}`);
   }
 }
 
-const target = parseTarget();
-if (!target) {
-  $("lead").textContent = "警告対象の URL を読み取れませんでした。";
-  $("proceed").hidden = true;
-} else {
+async function init() {
+  $("back").addEventListener("click", goBack);
+  const target = parseTarget(params.get("url"));
+  if (!target) {
+    $("lead").textContent = "警告対象の URL を読み取れませんでした。";
+    $("proceed").hidden = true;
+    return;
+  }
   render(target, analyzeHostname(target.hostname));
-  $("proceed").addEventListener("click", () => proceed(target));
+
+  // 他のページに埋め込まれている場合は、重ねたボタンを押させる攻撃を避けるため操作させない
+  if (window.top !== window) {
+    $("back").hidden = true;
+    disableProceed("このページは他のページに埋め込まれているため、ここからは操作できません。");
+    return;
+  }
+  const token = params.get("token");
+  const check = await browser.runtime.sendMessage({ type: "check-token", token }).catch(() => null);
+  if (!check?.valid || check.url !== target.href) {
+    disableProceed("この警告ページは拡張機能が表示したものではないか、有効期限が切れています。ここからは開けません。");
+    return;
+  }
+  $("proceed").addEventListener("click", () => proceed(token));
 }
-$("back").addEventListener("click", goBack);
+
+init();

@@ -67,7 +67,11 @@ h2 {
   font-size: 17px;
 }
 
+h1.plain { color: var(--text); }
+
 .lead { margin: 0; color: var(--muted); }
+
+a { color: var(--primary); }
 
 .card {
   margin-top: 24px;

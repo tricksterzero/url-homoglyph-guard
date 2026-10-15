@@ -63,6 +63,11 @@
     return out.normalize("NFC");
   }
 
+  // 結合記号（アクセントなど）を取り除く。UTS #39 の skeleton の外側で行う追加の判定に使う。
+  function stripMarks(text) {
+    return text.normalize("NFD").replace(/\p{M}/gu, "");
+  }
+
   // 5.2 の Restriction Level。識別子プロファイルの検査は IDNA 側の制約に任せて省略する。
   // Highly Restrictive より緩いもの（Moderately 以下）は区別せず "less-restrictive" とする。
   function restrictionLevel(text) {
@@ -105,13 +110,20 @@
         isIdn: true,
         findings: [{ type: "undecodable" }],
         chars: [],
+        lookalike: asciiLabel,
       };
     }
     const isIdn = !ASCII_ONLY.test(unicode);
     const findings = [];
+    let lookalikeText = lookalike(unicode);
     if (isIdn) {
-      if (ASCII_ONLY.test(skeleton(unicode))) {
-        findings.push({ type: "ascii-lookalike", lookalike: lookalike(unicode) });
+      const skel = skeleton(unicode);
+      if (ASCII_ONLY.test(skel)) {
+        findings.push({ type: "ascii-lookalike", lookalike: lookalikeText });
+      } else if (ASCII_ONLY.test(stripMarks(skel))) {
+        // "аррӏе" + U+0301 や "amazọn" のように、小さな記号を足しただけで ASCII に見えるもの
+        lookalikeText = stripMarks(lookalikeText);
+        findings.push({ type: "ascii-lookalike-marks", lookalike: lookalikeText });
       }
       if (restrictionLevel(unicode) === "less-restrictive") {
         const scripts = new Set();
@@ -119,8 +131,11 @@
         findings.push({ type: "mixed-script", scripts: [...scripts] });
       }
     }
-    const chars = isIdn ? [...unicode].filter((ch) => !ASCII_ONLY.test(ch)).map(describeChar) : [];
-    return { ascii: asciiLabel, unicode, isIdn, findings, chars };
+    // NFD にして、結合記号も 1 文字ずつ表に出す（"é" のように合成済みの文字も分解される）
+    const chars = isIdn
+      ? [...unicode.normalize("NFD")].filter((ch) => !ASCII_ONLY.test(ch)).map(describeChar)
+      : [];
+    return { ascii: asciiLabel, unicode, isIdn, findings, chars, lookalike: lookalikeText };
   }
 
   // ホスト名（Punycode 形式でも Unicode 形式でもよい）を判定する。
@@ -129,7 +144,7 @@
     return {
       hostname,
       unicodeHostname: labels.map((l) => l.unicode).join("."),
-      lookalikeHostname: labels.map((l) => lookalike(l.unicode)).join("."),
+      lookalikeHostname: labels.map((l) => l.lookalike).join("."),
       suspicious: labels.some((l) => l.findings.length > 0),
       labels,
     };

@@ -16,6 +16,8 @@
     // 休止後に同じホストへ遷移するページと、最後に終了させるページを開いてから「開く」を押す
     await browser.tabs.create({ url: LOG_URL.replace("/log", "/step-second"), active: false });
     await browser.tabs.create({ url: LOG_URL.replace("/log", "/step-shutdown"), active: false });
+    // 警告ページがトークンを確かめてボタンを有効にするまで待つ
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     document.getElementById("proceed").click();
   }
 })();

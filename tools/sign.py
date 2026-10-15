@@ -84,13 +84,33 @@ def prepare_source(work_dir: pathlib.Path, commit: str, version: str) -> tuple[p
     tree = work_dir / "source"
     with zipfile.ZipFile(source_zip) as archive:
         archive.extractall(tree)
-    # 提出するソースから生成物を再現できることを確かめる
-    data_dir = tree / "extension" / "data"
-    before = file_hashes(data_dir)
+    # 提出するソースから生成物を再現できることを確かめる（生成物以外も含め extension/ 全体を比較する）
+    extension_dir = tree / "extension"
+    before = file_hashes(extension_dir)
     subprocess.run([sys.executable, str(tree / "tools" / "build_data.py")], check=True, capture_output=True)
-    if file_hashes(data_dir) != before:
-        fail("data/unicode/ から再生成した extension/data/ がコミット済みのものと一致しません。")
-    return source_zip, tree / "extension"
+    if file_hashes(extension_dir) != before:
+        fail("data/unicode/ から再生成した extension/ がコミット済みのものと一致しません。")
+    return source_zip, extension_dir
+
+
+def verify_xpi(xpi: pathlib.Path, extension_dir: pathlib.Path) -> None:
+    # 署名済み .xpi の中身が、署名に出した extension/ と同じファイル構成・内容であることを確かめる
+    # （META-INF/ は署名、ドットファイルは web-ext がパッケージから除外するので比較しない）
+    expected = {
+        p.relative_to(extension_dir).as_posix(): p.read_bytes()
+        for p in extension_dir.rglob("*")
+        if p.is_file() and not any(part.startswith(".") for part in p.relative_to(extension_dir).parts)
+    }
+    with zipfile.ZipFile(xpi) as archive:
+        actual = {
+            name: archive.read(name)
+            for name in archive.namelist()
+            if not name.endswith("/") and not name.startswith("META-INF/")
+        }
+    if actual != expected:
+        missing, extra = expected.keys() - actual.keys(), actual.keys() - expected.keys()
+        changed = {k for k in expected.keys() & actual.keys() if expected[k] != actual[k]}
+        fail(f"署名済み .xpi の内容が一致しません（不足 {sorted(missing)}, 余分 {sorted(extra)}, 相違 {sorted(changed)}）")
 
 
 def child_env(api_key: str, api_secret: str) -> dict[str, str]:
@@ -140,16 +160,17 @@ def main() -> int:
             env=child_env(api_key, api_secret),
         )
 
-    # 今回ダウンロードされ、ID と版が一致する .xpi があるときだけ成功とする
-    new_xpis = [
-        p for p in DIST_DIR.glob("*.xpi")
-        if p.stat().st_mtime >= started
-        and read_xpi_manifest(p).get("version") == version
-        and read_xpi_manifest(p).get("browser_specific_settings", {}).get("gecko", {}).get("id") == addon_id
-    ]
-    if result.returncode == 0 and new_xpis:
-        print(f"署名済み: {new_xpis[0]}")
-        return 0
+        # 今回ダウンロードされ、ID・版・中身が一致する .xpi があるときだけ成功とする
+        new_xpis = [
+            p for p in DIST_DIR.glob("*.xpi")
+            if p.stat().st_mtime >= started
+            and read_xpi_manifest(p).get("version") == version
+            and read_xpi_manifest(p).get("browser_specific_settings", {}).get("gecko", {}).get("id") == addon_id
+        ]
+        if result.returncode == 0 and len(new_xpis) == 1:
+            verify_xpi(new_xpis[0], extension_dir)
+            print(f"署名済み: {new_xpis[0]}")
+            return 0
     print(
         "署名済みの .xpi を取得できませんでした。"
         f"アップロード済みの可能性があるため、再実行する前に AMO の開発者ハブで {addon_id} の {version} を確認してください。"

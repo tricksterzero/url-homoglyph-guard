@@ -86,8 +86,23 @@ test("ASCII に見えなくても、ラテン文字とキリル文字が日本�
   assert.deepEqual(result.labels[0].findings[0].scripts.sort(), ["Cyrillic", "Katakana", "Latin"]);
 });
 
+test("結合記号を足しただけで ASCII に見えるラベルを検出する", () => {
+  // キリル文字だけの apple に U+0301 を足すと、skeleton も文字体系の判定もすり抜けていた（Codex の指摘）
+  const cyrillic = analyze("аррӏе́.com");
+  assert.equal(cyrillic.suspicious, true);
+  assert.deepEqual(cyrillic.labels[0].findings.map((f) => f.type), ["ascii-lookalike-marks"]);
+  assert.equal(cyrillic.lookalikeHostname, "apple.com");
+  assert.ok(cyrillic.labels[0].chars.some((c) => c.codePoint === "U+0301"));
+  // ラテン文字のアクセントによる偽装も同じ扱い（正規のドメインでも警告する）
+  for (const [host, expected] of [["amazọn.com", "amazon.com"], ["münchen.de", "munchen.de"]]) {
+    const result = analyze(host);
+    assert.equal(result.suspicious, true, host);
+    assert.equal(result.lookalikeHostname, expected);
+  }
+});
+
 test("通常の国際化ドメインは警告しない", () => {
-  for (const host of ["日本語.jp", "例え.テスト", "münchen.de", "ελληνικά.gr", "abc漢字.jp", "ひらがなabc.jp"]) {
+  for (const host of ["日本語.jp", "例え.テスト", "ばびぶ.jp", "ελληνικά.gr", "abc漢字.jp", "ひらがなabc.jp"]) {
     const result = analyze(host);
     assert.equal(result.suspicious, false, `${host}: ${JSON.stringify(result.labels.map((l) => l.findings))}`);
   }
