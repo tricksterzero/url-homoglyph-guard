@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.ico binary
+*.zip binary
+*.xpi binary
+docs/sources/** -text
+data/unicode/** -text

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>紛らわしいドメインの警告</title>
+  <link rel="stylesheet" href="warning.css">
+</head>
+<body>
+  <main>
+    <p class="badge">URL Homoglyph Guard</p>
+    <h1>このドメインは見た目を偽装している可能性があります</h1>
+    <p class="lead" id="lead"></p>
+
+    <section class="card" aria-labelledby="host-heading">
+      <h2 id="host-heading" class="visually-hidden">ドメインの比較</h2>
+      <dl class="hosts">
+        <dt>開こうとしたドメイン</dt>
+        <dd><span class="host-display" id="unicode-host"></span></dd>
+        <dt id="lookalike-term">似ているドメイン</dt>
+        <dd id="lookalike-desc"><span class="host-plain" id="lookalike-host"></span></dd>
+        <dt>実際のドメイン (Punycode)</dt>
+        <dd><code id="ascii-host"></code></dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="reason-heading">
+      <h2 id="reason-heading">警告の理由</h2>
+      <ul id="reasons"></ul>
+    </section>
+
+    <section aria-labelledby="chars-heading">
+      <h2 id="chars-heading">ASCII 以外の文字</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>文字</th><th>コードポイント</th><th>名前</th><th>文字体系</th><th>似ている文字</th></tr>
+          </thead>
+          <tbody id="chars"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <details>
+      <summary>開こうとした URL 全体</summary>
+      <code class="url" id="full-url"></code>
+    </details>
+
+    <div class="actions">
+      <button type="button" class="primary" id="back">開かずに戻る</button>
+      <button type="button" class="secondary" id="proceed">危険を理解して開く</button>
+    </div>
+    <p class="note" id="proceed-note"></p>
+    <p class="error" id="error" hidden></p>
+  </main>
+
+  <script src="../data/confusables.js"></script>
+  <script src="../data/scripts.js"></script>
+  <script src="../data/names.js"></script>
+  <script src="../lib/punycode.js"></script>
+  <script src="../lib/detector.js"></script>
+  <script src="warning.js"></script>
+</body>
+</html>
