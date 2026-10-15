@@ -19,7 +19,7 @@ const WARNING_PAGE = `${EXTENSION_ORIGIN}warning/warning.html`;
 const LOOKALIKE_URL = `http://${domainToASCII("аmazon.test")}/path`;
 const LOOKALIKE_HOST = new URL(LOOKALIKE_URL).hostname;
 
-function createBrowser(fail) {
+function createBrowser(fail, localStore) {
   const store = {};
   const listeners = {};
   const check = (name) => {
@@ -49,6 +49,13 @@ function createBrowser(fail) {
           for (const k of [].concat(keys)) delete store[k];
         },
       },
+      local: {
+        async get(keys) {
+          if (fail.localGet) throw new Error("storage.local.get failed");
+          return Object.fromEntries([].concat(keys).filter((k) => k in localStore).map((k) => [k, localStore[k]]));
+        },
+      },
+      onChanged: { addListener: (f) => (listeners.storageChanged = f) },
     },
     permissions: { contains: async () => true },
     extension: { isAllowedIncognitoAccess: async () => true },
@@ -57,8 +64,8 @@ function createBrowser(fail) {
   return { browser, store, listeners };
 }
 
-function loadBackground({ fail = {}, analyzeHostname = detector.analyzeHostname } = {}) {
-  const env = createBrowser(fail);
+function loadBackground({ fail = {}, analyzeHostname = detector.analyzeHostname, local = {} } = {}) {
+  const env = createBrowser(fail, local);
   const context = vm.createContext({
     browser: env.browser,
     URL,
@@ -193,4 +200,32 @@ test("allow-host: 形式の違うトークンや別タブからは許可しな�
     assert.deepEqual(await send(env, { type: "allow-host", token }, s), { ok: false });
   }
   assert.equal(env.store[`allowed:${LOOKALIKE_HOST}`], undefined);
+});
+
+// 「記号を除くと ASCII に見える」だけのホスト（ラテン文字のアクセントによるもの）
+const MARKS_ONLY_URL = `http://${domainToASCII("amazọn.test")}/path`;
+
+test("設定: アクセント付きの紛らわしいドメインは、既定では警告する", async () => {
+  const env = loadBackground();
+  assert.ok((await request(env, MARKS_ONLY_URL)).redirectUrl.startsWith(`${WARNING_PAGE}?`));
+});
+
+test("設定: warnOnMarks が false なら、アクセントだけのドメインは通し、ほかの判定は今までどおり警告する", async () => {
+  const env = loadBackground({ local: { warnOnMarks: false } });
+  assert.deepEqual(await request(env, MARKS_ONLY_URL), {});
+  assert.ok((await request(env)).redirectUrl.startsWith(`${WARNING_PAGE}?`));
+});
+
+test("設定: 変更はすぐに反映される", async () => {
+  const env = loadBackground();
+  await request(env, MARKS_ONLY_URL); // 設定の読み込みを済ませる
+  env.listeners.storageChanged({ warnOnMarks: { newValue: false } }, "local");
+  assert.deepEqual(await request(env, MARKS_ONLY_URL), {});
+  env.listeners.storageChanged({ warnOnMarks: { newValue: true } }, "local");
+  assert.ok((await request(env, MARKS_ONLY_URL)).redirectUrl.startsWith(`${WARNING_PAGE}?`));
+});
+
+test("設定: 読み込めないときは警告する側に倒す", async () => {
+  const env = loadBackground({ fail: { localGet: true }, local: { warnOnMarks: false } });
+  assert.ok((await request(env, MARKS_ONLY_URL)).redirectUrl.startsWith(`${WARNING_PAGE}?`));
 });

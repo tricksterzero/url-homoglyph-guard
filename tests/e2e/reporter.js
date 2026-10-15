@@ -21,6 +21,11 @@ async function run() {
     const setupUrl = browser.runtime.getURL("setup/setup.html");
     const setupTabs = (await browser.tabs.query({})).filter((tab) => tab.url === setupUrl);
     await report("setup", { opened: setupTabs.length > 0 });
+    if (setupTabs.length) {
+      await browser.tabs.update(setupTabs[0].id, { active: true });
+      await sleep(800);
+      await report("screenshot", { name: "setup", dataUrl: await browser.tabs.captureVisibleTab() });
+    }
     for (const tab of setupTabs) await browser.tabs.remove(tab.id);
 
     const lookalike = await browser.tabs.create({ url: "http://аmazon.test:__PORT__/typed" });

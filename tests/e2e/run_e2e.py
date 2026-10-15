@@ -324,7 +324,7 @@ def main() -> int:
     extra_prefs = dict(item.split("=", 1) for item in args.pref)
 
     checkers = []
-    with tempfile.TemporaryDirectory(prefix="url-sanitizer-e2e-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="url-homoglyph-guard-e2e-") as tmp:
         for scenario, (check, prefs, extra) in SCENARIOS.items():
             if args.only and scenario != args.only:
                 continue
@@ -340,14 +340,12 @@ def main() -> int:
                     [{k: v for k, v in e.items() if k != "dataUrl"} for e in server.events], ensure_ascii=False, indent=2
                 ))
 
-            # 1 枚目は指定したパス、2 枚目以降は "<名前>-<画面名>.png" に保存する
+            # "<指定した名前>-<画面名>.png" に保存する（例: shot.png -> shot-summary.png, shot-details.png）
             shots = [e for e in server.events if e["event"] == "screenshot"]
             for index, event in enumerate(shots):
                 data_url = event.pop("dataUrl")
                 if args.screenshot:
-                    dest = args.screenshot if index == 0 else args.screenshot.with_stem(
-                        f"{args.screenshot.stem}-{event.get('name', index)}"
-                    )
+                    dest = args.screenshot.with_stem(f"{args.screenshot.stem}-{event.get('name', index)}")
                     dest.write_bytes(base64.b64decode(data_url.split(",", 1)[1]))
                     print(f"screenshot: {dest}")
             checkers.append(check(server.events))

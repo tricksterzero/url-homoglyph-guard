@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>紛らわしいドメイン</title>
+  <title data-i18n="warningPageTitle"></title>
   <link rel="stylesheet" href="warning.css">
 </head>
 <body>
@@ -15,44 +15,50 @@
         <path d="M12 9v5.5" stroke="var(--icon-mark)" stroke-width="2.2" stroke-linecap="round"/>
         <circle cx="12" cy="17.6" r="1.25" fill="var(--icon-mark)"/>
       </svg>
-      <h1 id="title">紛らわしい文字を含むドメインです</h1>
+      <h1 id="title" data-i18n="titleLookalike"></h1>
     </div>
 
     <p class="host" id="unicode-host"></p>
     <p id="summary"></p>
 
     <dl class="compare">
-      <dt id="lookalike-term">似ているドメイン</dt>
+      <dt id="lookalike-term" data-i18n="labelLookalike"></dt>
       <dd id="lookalike-desc"><span id="lookalike-host"></span></dd>
-      <dt>実際のドメイン</dt>
+      <dt data-i18n="labelActual"></dt>
       <dd><code id="ascii-host"></code></dd>
     </dl>
 
     <div class="buttons">
-      <button type="button" id="toggle-details" aria-expanded="false" aria-controls="details">詳細</button>
-      <button type="button" class="primary" id="back">戻る（推奨）</button>
+      <button type="button" id="toggle-details" aria-expanded="false" aria-controls="details" data-i18n="buttonDetails"></button>
+      <button type="button" class="primary" id="back" data-i18n="buttonBack"></button>
     </div>
 
     <section id="details" hidden>
-      <h2>判定の理由</h2>
+      <h2 data-i18n="headingReasons"></h2>
       <ul id="reasons"></ul>
 
-      <h2>英字以外の文字</h2>
+      <h2 data-i18n="headingChars"></h2>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>文字</th><th>コードポイント</th><th>名前</th><th>文字体系</th><th>似ている文字</th></tr>
+            <tr>
+              <th data-i18n="tableChar"></th>
+              <th data-i18n="tableCodePoint"></th>
+              <th data-i18n="tableName"></th>
+              <th data-i18n="tableScript"></th>
+              <th data-i18n="tableLookalike"></th>
+            </tr>
           </thead>
           <tbody id="chars"></tbody>
         </table>
       </div>
 
-      <h2>開こうとした URL</h2>
+      <h2 data-i18n="headingUrl"></h2>
       <p><code class="url" id="full-url"></code></p>
 
       <p class="note" id="proceed-note"></p>
       <div class="buttons start">
-        <button type="button" id="proceed">リスクを理解して開く</button>
+        <button type="button" id="proceed" data-i18n="buttonProceed"></button>
       </div>
       <p class="error" id="error" hidden></p>
     </section>
@@ -63,6 +69,7 @@
   <script src="../data/names.js"></script>
   <script src="../lib/punycode.js"></script>
   <script src="../lib/detector.js"></script>
+  <script src="../lib/i18n.js"></script>
   <script src="warning.js"></script>
 </body>
 </html>

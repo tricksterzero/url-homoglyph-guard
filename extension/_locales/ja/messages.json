@@ -1,0 +1,129 @@
+{
+  "extensionName": { "message": "URL Homoglyph Guard" },
+  "extensionDescription": {
+    "message": "見た目が紛らわしい国際化ドメイン（例: キリル文字の а を使った аmazon.com）を開く前に警告します。"
+  },
+
+  "warningPageTitle": { "message": "紛らわしいドメイン" },
+  "titleLookalike": { "message": "紛らわしい文字を含むドメインです" },
+  "titleMixed": { "message": "通常は一緒に使われない文字を含むドメインです" },
+  "labelLookalike": { "message": "似ているドメイン" },
+  "labelActual": { "message": "実際のドメイン" },
+  "buttonDetails": { "message": "詳細" },
+  "buttonHideDetails": { "message": "詳細を閉じる" },
+  "buttonBack": { "message": "戻る（推奨）" },
+  "headingReasons": { "message": "判定の理由" },
+  "headingChars": { "message": "英字以外の文字" },
+  "tableChar": { "message": "文字" },
+  "tableCodePoint": { "message": "コードポイント" },
+  "tableName": { "message": "名前" },
+  "tableScript": { "message": "文字体系" },
+  "tableLookalike": { "message": "似ている文字" },
+  "headingUrl": { "message": "開こうとした URL" },
+  "buttonProceed": { "message": "リスクを理解して開く" },
+
+  "quoteOpen": { "message": "「" },
+  "quoteClose": { "message": "」" },
+  "summaryChar": {
+    "message": "「$CHAR$」（$CODEPOINT$）は英字の $LATIN$ ではなく$SCRIPT$",
+    "placeholders": {
+      "char": { "content": "$1" },
+      "codepoint": { "content": "$2" },
+      "latin": { "content": "$3" },
+      "script": { "content": "$4" }
+    }
+  },
+  "summaryCharSeparator": { "message": "、" },
+  "summaryMoreChars": {
+    "message": "（ほか $COUNT$ 文字）",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "summaryCharsEnd": { "message": "です。" },
+  "summaryGenericLookalike": { "message": "英字によく似た別の文字を含みます。" },
+  "summaryDifferentSite": {
+    "message": "$HOST$ とは別のサイトです。",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "summaryMarks": {
+    "message": "アクセントなどの小さな記号が付いた文字を含みます。記号を除くと $HOST$ と同じ見た目ですが、別のサイトです。",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "summaryMixed": {
+    "message": "$SCRIPTS$が混ざっています。正規のドメインではまれな組み合わせです。",
+    "placeholders": { "scripts": { "content": "$1" } }
+  },
+  "summaryUndecodable": { "message": "このドメインの表記（Punycode）を正しく読み取れませんでした。" },
+
+  "labelPunycode": {
+    "message": "（$PUNYCODE$）",
+    "placeholders": { "punycode": { "content": "$1" } }
+  },
+  "reasonLookalike": {
+    "message": "は、英字以外の文字を含みますが、見た目は「$LOOKALIKE$」とほぼ同じです。",
+    "placeholders": { "lookalike": { "content": "$1" } }
+  },
+  "reasonMarks": {
+    "message": "は、記号を除くと「$LOOKALIKE$」と同じに見えます。",
+    "placeholders": { "lookalike": { "content": "$1" } }
+  },
+  "reasonMixed": {
+    "message": "には、$SCRIPTS$が混在しています。",
+    "placeholders": { "scripts": { "content": "$1" } }
+  },
+  "reasonUndecodable": {
+    "message": "「$LABEL$」は Punycode として読み取れません。",
+    "placeholders": { "label": { "content": "$1" } }
+  },
+  "charNoData": { "message": "（データなし）" },
+  "scriptCommon": { "message": "共通" },
+
+  "proceedNote": {
+    "message": "開くと、ブラウザを閉じるまで $HOST$ では警告しません。",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "proceedUnavailable": { "message": "この警告ページからは開けません。もう一度リンクを開き直してください。" },
+  "registerFailed": { "message": "許可を登録できませんでした。開く場合は、もう一度リンクを開き直してください。" },
+  "errorPrefix": {
+    "message": "エラー: $MESSAGE$",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+  "framedNote": { "message": "このページは他のページに埋め込まれているため、ここからは操作できません。" },
+  "invalidTokenNote": {
+    "message": "この警告ページは拡張機能が表示したものではないか、有効期限が切れています。ここからは開けません。"
+  },
+  "urlUnreadable": { "message": "警告対象の URL を読み取れませんでした。" },
+
+  "script_Latin": { "message": "ラテン文字" },
+  "script_Cyrillic": { "message": "キリル文字" },
+  "script_Greek": { "message": "ギリシャ文字" },
+  "script_Armenian": { "message": "アルメニア文字" },
+  "script_Cherokee": { "message": "チェロキー文字" },
+  "script_Georgian": { "message": "ジョージア文字" },
+  "script_Han": { "message": "漢字" },
+  "script_Hiragana": { "message": "ひらがな" },
+  "script_Katakana": { "message": "カタカナ" },
+  "script_Hangul": { "message": "ハングル" },
+  "script_Arabic": { "message": "アラビア文字" },
+  "script_Hebrew": { "message": "ヘブライ文字" },
+
+  "setupTitle": { "message": "URL Homoglyph Guard の設定" },
+  "setupHostHeading": { "message": "すべてのサイトへのアクセス" },
+  "setupHostText": {
+    "message": "開こうとしたページのドメインを読み込み前に確認するため、すべてのサイトへのアクセスを許可してください。ページの内容を読んだり、外部へ送信したりはしません。"
+  },
+  "hostGranted": { "message": "許可されています。" },
+  "hostNotGranted": { "message": "まだ許可されていません。警告は表示されません。" },
+  "grantButton": { "message": "許可する" },
+  "setupIncognitoHeading": { "message": "プライベートウィンドウ" },
+  "setupIncognitoText": {
+    "message": "Firefox の拡張機能は、既定ではプライベートウィンドウで動きません。プライベートウィンドウでも警告するには、アドオンの管理画面（about:addons）でこの拡張機能の詳細を開き、プライベートウィンドウでの実行を許可してください。"
+  },
+  "setupIncognitoLink": { "message": "Mozilla の説明" },
+  "incognitoAllowed": { "message": "プライベートウィンドウでも動作します。" },
+  "incognitoNotAllowed": { "message": "プライベートウィンドウでは動作しません（許可すると、次にこのページを開いたときに反映されます）。" },
+  "setupMarksHeading": { "message": "アクセント付きの文字" },
+  "setupMarksText": {
+    "message": "アクセントなどの小さな記号を除くと英字のドメインと同じに見えるドメイン（例: amazọn.com）を警告します。münchen.de のような正規のドメインも警告対象になります。"
+  },
+  "setupMarksLabel": { "message": "アクセント付きの紛らわしいドメインを警告する" }
+}

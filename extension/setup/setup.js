@@ -1,16 +1,22 @@
+const { t, localizePage } = globalThis.UrlSanitizerI18n;
+
 const ORIGINS = { origins: ["<all_urls>"] };
+// 設定は storage.local に保存する。既定（未保存）は警告する
+const WARN_ON_MARKS_KEY = "warnOnMarks";
+
 const hostStatus = document.getElementById("host-status");
 const incognitoStatus = document.getElementById("incognito-status");
 const grant = document.getElementById("grant");
+const warnOnMarks = document.getElementById("warn-on-marks");
 
 async function refresh() {
   const granted = await browser.permissions.contains(ORIGINS);
   grant.hidden = granted;
-  hostStatus.textContent = granted ? "許可されています。" : "まだ許可されていません。警告は表示されません。";
+  hostStatus.textContent = t(granted ? "hostGranted" : "hostNotGranted");
   const incognito = await browser.extension.isAllowedIncognitoAccess();
-  incognitoStatus.textContent = incognito
-    ? "プライベートウィンドウでも動作します。"
-    : "プライベートウィンドウでは動作しません（許可すると次に開いたときに反映されます）。";
+  incognitoStatus.textContent = t(incognito ? "incognitoAllowed" : "incognitoNotAllowed");
+  const stored = await browser.storage.local.get(WARN_ON_MARKS_KEY);
+  warnOnMarks.checked = stored[WARN_ON_MARKS_KEY] !== false;
 }
 
 grant.addEventListener("click", async () => {
@@ -19,4 +25,9 @@ grant.addEventListener("click", async () => {
   await refresh();
 });
 
+warnOnMarks.addEventListener("change", async () => {
+  await browser.storage.local.set({ [WARN_ON_MARKS_KEY]: warnOnMarks.checked });
+});
+
+localizePage();
 refresh();

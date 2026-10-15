@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "URL Homoglyph Guard",
-  "version": "0.1.0",
-  "description": "見た目が紛らわしい国際化ドメイン（例: キリル文字の а を使った аmazon.com）を開く前に警告します。",
+  "name": "__MSG_extensionName__",
+  "version": "0.2.0",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "browser_specific_settings": {
     "gecko": {
       "id": "url-homoglyph-guard@local.invalid",

@@ -19,6 +19,26 @@ const allowedLoaded = browser.storage.session
   })
   .catch(() => {});
 
+// 設定: アクセントなどの記号を除くと ASCII に見えるドメイン（ascii-lookalike-marks）も警告するか。
+// storage.local に false が保存されているときだけ無効にする。読み込めなければ警告する側に倒す
+const WARN_ON_MARKS_KEY = "warnOnMarks";
+let warnOnMarks = true;
+const settingsLoaded = browser.storage.local
+  .get(WARN_ON_MARKS_KEY)
+  .then((stored) => {
+    warnOnMarks = stored[WARN_ON_MARKS_KEY] !== false;
+  })
+  .catch(() => {});
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && WARN_ON_MARKS_KEY in changes) warnOnMarks = changes[WARN_ON_MARKS_KEY].newValue !== false;
+});
+
+function shouldWarn(result) {
+  return result.labels.some((label) =>
+    label.findings.some((finding) => warnOnMarks || finding.type !== "ascii-lookalike-marks")
+  );
+}
+
 async function allowHost(hostname) {
   await allowedLoaded;
   // 保存に成功してから有効にする（保存に失敗したのに警告だけ消える状態を作らない）
@@ -53,9 +73,9 @@ function warningUrl(url, token) {
 // blocking リスナーで例外や reject が起きると、Firefox は要求をそのまま続行する
 // （toolkit/components/extensions/webrequest/WebRequest.sys.mjs の applyChanges）。
 // そのため、途中で失敗したらトークンなし（＝ここからは開けない）の警告ページへ転送し、読み込ませない。
-async function decide(details, hostname) {
-  await allowedLoaded;
-  if (allowedHosts.has(hostname)) return {};
+async function decide(details, hostname, result) {
+  await Promise.all([allowedLoaded, settingsLoaded]);
+  if (!shouldWarn(result) || allowedHosts.has(hostname)) return {};
   try {
     return { redirectUrl: warningUrl(details.url, await issueToken(details, hostname)) };
   } catch {
@@ -72,12 +92,14 @@ function onBeforeRequest(details) {
   }
   // ブラウザは国際化ドメインを Punycode 形式 (xn--) で渡すので、それ以外は判定しない
   if (!hostname.includes("xn--")) return {};
+  let result;
   try {
-    if (!analyzeHostname(hostname).suspicious) return {};
+    result = analyzeHostname(hostname);
+    if (!result.suspicious) return {};
   } catch {
     return { redirectUrl: warningUrl(details.url) };
   }
-  return decide(details, hostname).catch(() => ({ redirectUrl: warningUrl(details.url) }));
+  return decide(details, hostname, result).catch(() => ({ redirectUrl: warningUrl(details.url) }));
 }
 
 browser.webRequest.onBeforeRequest.addListener(

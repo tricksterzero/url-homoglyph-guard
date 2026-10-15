@@ -1,6 +1,7 @@
-"""AMO で拡張機能に署名し（unlisted = 自分で配布）、署名済みの .xpi を dist/ に保存する。
+"""AMO に拡張機能を提出して署名を受け、署名済みの .xpi を dist/ に保存する。
 
-使い方: python tools/sign.py [--credentials <認証情報 JSON のパス>]
+使い方: python tools/sign.py [--channel unlisted|listed] [--credentials <認証情報 JSON のパス>]
+  unlisted（既定）: 自分で配布する。listed: AMO で一般公開する（amo/metadata.json の掲載情報も送る）。
 事前に python tools/save_amo_credentials.py で認証情報を保存しておく。
 
 安全のための方針:
@@ -143,6 +144,12 @@ def read_xpi_manifest(xpi: pathlib.Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--credentials", type=pathlib.Path, default=DEFAULT_CREDENTIALS)
+    parser.add_argument(
+        "--channel",
+        choices=["unlisted", "listed"],
+        default="unlisted",
+        help="unlisted: 自分で配布（既定）、listed: AMO で一般公開。listed では amo/metadata.json の掲載情報も送る",
+    )
     args = parser.parse_args()
 
     node, web_ext_script = find_web_ext()
@@ -154,19 +161,31 @@ def main() -> int:
     api_key, api_secret = load_credentials(args.credentials)
 
     DIST_DIR.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="url-sanitizer-sign-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="url-homoglyph-guard-sign-") as tmp:
         source_zip, extension_dir = prepare_source(pathlib.Path(tmp), commit, version)
-        print(f"commit: {commit}\nversion: {version}\nid: {addon_id}\nsource archive: {source_zip}")
+        print(
+            f"commit: {commit}\nversion: {version}\nid: {addon_id}\nchannel: {args.channel}\n"
+            f"source archive: {source_zip}"
+        )
+        metadata_args = []
+        if args.channel == "listed":
+            # 掲載情報も、署名対象と同じコミットのものを使う
+            metadata = extension_dir.parent / "amo" / "metadata.json"
+            if not metadata.is_file():
+                fail("listed で提出するには amo/metadata.json が必要です。")
+            json.loads(metadata.read_text(encoding="utf-8"))
+            metadata_args = ["--amo-metadata", str(metadata)]
         started = time.time()
         result = subprocess.run(
             [
                 node, str(web_ext_script), "sign",
                 "--no-config-discovery",
-                "--channel", "unlisted",
+                "--channel", args.channel,
                 "--source-dir", str(extension_dir),
                 "--artifacts-dir", str(DIST_DIR),
                 "--upload-source-code", str(source_zip),
                 "--approval-timeout", str(APPROVAL_TIMEOUT_MS),
+                *metadata_args,
             ],
             env=child_env(api_key, api_secret),
         )

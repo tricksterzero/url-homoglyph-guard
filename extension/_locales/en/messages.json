@@ -1,0 +1,129 @@
+{
+  "extensionName": { "message": "URL Homoglyph Guard" },
+  "extensionDescription": {
+    "message": "Warns you before opening internationalized domain names that look deceptively like other domains (for example, аmazon.com written with a Cyrillic а)."
+  },
+
+  "warningPageTitle": { "message": "Deceptive domain" },
+  "titleLookalike": { "message": "This domain contains look-alike characters" },
+  "titleMixed": { "message": "This domain mixes writing systems that are rarely used together" },
+  "labelLookalike": { "message": "Looks like" },
+  "labelActual": { "message": "Actual domain" },
+  "buttonDetails": { "message": "Details" },
+  "buttonHideDetails": { "message": "Hide details" },
+  "buttonBack": { "message": "Go back (recommended)" },
+  "headingReasons": { "message": "Why you are seeing this" },
+  "headingChars": { "message": "Non-ASCII characters" },
+  "tableChar": { "message": "Character" },
+  "tableCodePoint": { "message": "Code point" },
+  "tableName": { "message": "Name" },
+  "tableScript": { "message": "Script" },
+  "tableLookalike": { "message": "Looks like" },
+  "headingUrl": { "message": "URL you tried to open" },
+  "buttonProceed": { "message": "Accept the risk and open" },
+
+  "quoteOpen": { "message": "“" },
+  "quoteClose": { "message": "”" },
+  "summaryChar": {
+    "message": "“$CHAR$” ($CODEPOINT$) is a $SCRIPT$ character, not the Latin letter $LATIN$",
+    "placeholders": {
+      "char": { "content": "$1" },
+      "codepoint": { "content": "$2" },
+      "latin": { "content": "$3" },
+      "script": { "content": "$4" }
+    }
+  },
+  "summaryCharSeparator": { "message": "; " },
+  "summaryMoreChars": {
+    "message": " (and $COUNT$ more)",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "summaryCharsEnd": { "message": "." },
+  "summaryGenericLookalike": { "message": "It contains characters that look like Latin letters but are different." },
+  "summaryDifferentSite": {
+    "message": " It is not the same site as $HOST$.",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "summaryMarks": {
+    "message": "It contains characters with small marks such as accents. Without the marks it looks the same as $HOST$, but it is a different site.",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "summaryMixed": {
+    "message": "It mixes $SCRIPTS$. Legitimate domains rarely use this combination.",
+    "placeholders": { "scripts": { "content": "$1" } }
+  },
+  "summaryUndecodable": { "message": "The Punycode form of this domain could not be decoded." },
+
+  "labelPunycode": {
+    "message": " ($PUNYCODE$)",
+    "placeholders": { "punycode": { "content": "$1" } }
+  },
+  "reasonLookalike": {
+    "message": " contains non-ASCII characters but looks almost the same as “$LOOKALIKE$”.",
+    "placeholders": { "lookalike": { "content": "$1" } }
+  },
+  "reasonMarks": {
+    "message": " looks the same as “$LOOKALIKE$” once the marks are removed.",
+    "placeholders": { "lookalike": { "content": "$1" } }
+  },
+  "reasonMixed": {
+    "message": " mixes $SCRIPTS$.",
+    "placeholders": { "scripts": { "content": "$1" } }
+  },
+  "reasonUndecodable": {
+    "message": "“$LABEL$” cannot be decoded as Punycode.",
+    "placeholders": { "label": { "content": "$1" } }
+  },
+  "charNoData": { "message": "(no data)" },
+  "scriptCommon": { "message": "Common" },
+
+  "proceedNote": {
+    "message": "If you open it, $HOST$ will not trigger this warning again until you close the browser.",
+    "placeholders": { "host": { "content": "$1" } }
+  },
+  "proceedUnavailable": { "message": "This warning page cannot open the site. Open the link again." },
+  "registerFailed": { "message": "The exception could not be saved. To open the site, open the link again." },
+  "errorPrefix": {
+    "message": "Error: $MESSAGE$",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+  "framedNote": { "message": "This page is embedded in another page, so it cannot be used from here." },
+  "invalidTokenNote": {
+    "message": "This warning page was not shown by the extension, or it has expired. The site cannot be opened from here."
+  },
+  "urlUnreadable": { "message": "The URL to warn about could not be read." },
+
+  "script_Latin": { "message": "Latin" },
+  "script_Cyrillic": { "message": "Cyrillic" },
+  "script_Greek": { "message": "Greek" },
+  "script_Armenian": { "message": "Armenian" },
+  "script_Cherokee": { "message": "Cherokee" },
+  "script_Georgian": { "message": "Georgian" },
+  "script_Han": { "message": "Han" },
+  "script_Hiragana": { "message": "Hiragana" },
+  "script_Katakana": { "message": "Katakana" },
+  "script_Hangul": { "message": "Hangul" },
+  "script_Arabic": { "message": "Arabic" },
+  "script_Hebrew": { "message": "Hebrew" },
+
+  "setupTitle": { "message": "URL Homoglyph Guard settings" },
+  "setupHostHeading": { "message": "Access to all websites" },
+  "setupHostText": {
+    "message": "To check the domain of a page before it loads, the extension needs access to all websites. It does not read page content or send anything anywhere."
+  },
+  "hostGranted": { "message": "Allowed." },
+  "hostNotGranted": { "message": "Not allowed yet. No warnings will be shown." },
+  "grantButton": { "message": "Allow" },
+  "setupIncognitoHeading": { "message": "Private windows" },
+  "setupIncognitoText": {
+    "message": "By default, Firefox does not run extensions in private windows. To get warnings there too, open this extension's details in the Add-ons Manager (about:addons) and allow it to run in private windows."
+  },
+  "setupIncognitoLink": { "message": "Mozilla's help article" },
+  "incognitoAllowed": { "message": "Runs in private windows." },
+  "incognitoNotAllowed": { "message": "Does not run in private windows. If you allow it, the change applies the next time this page is opened." },
+  "setupMarksHeading": { "message": "Accented look-alikes" },
+  "setupMarksText": {
+    "message": "Warn about domains that look like an ASCII domain once accents and other small marks are removed (for example amazọn.com). Legitimate domains such as münchen.de are also warned about."
+  },
+  "setupMarksLabel": { "message": "Warn about accented look-alikes" }
+}
