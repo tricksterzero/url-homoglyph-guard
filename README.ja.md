@@ -8,13 +8,13 @@
 
 ## 仕組み
 
-- `webRequest.onBeforeRequest`（`"blocking"`、`types: ["main_frame"]`）で、ページ本体の読み込みを開始前に捕まえる。ネットワーク要求の段階で捕まえるため、遷移の起点（アドレスバーへの入力、ブックマーク、他のアプリから開いたリンクなど）を問わない想定。実機で確認したのは、拡張機能からのタブ作成、ページ内リンクのクリック、アドレスバーへの入力の 3 通り。
+- `webRequest.onBeforeRequest`（`"blocking"`、`types: ["main_frame"]`）で、ページ本体の読み込みが始まる前に要求を捕まえる。ネットワーク要求の段階で捕まえるため、遷移の起点（アドレスバーへの入力、ブックマーク、他のアプリから開いたリンクなど）を問わない想定。実機で確認したのは、拡張機能からのタブ作成、ページ内リンクのクリック、アドレスバーへの入力の 3 通り。
 - Firefox はリスナーにホスト名を Punycode 形式（`xn--...`）で渡す（Firefox 158 で確認）。`xn--` を含むホストだけをデコードして判定する。
 - 紛らわしいと判定したら警告ページ（`extension/warning/warning.html`）へ転送する。警告ページは Firefox 自身の警告画面に近い作りで、主な操作は「戻る（推奨）」。文字の一覧と「リスクを理解して開く」は「詳細」の中にある。開くことを選んだホストは、ブラウザを閉じるまで（`storage.session`）警告しない。
 - HTTP リダイレクトの転送先も同じように捕まえる（302 で確認）。警告中は相手のサーバーに要求が届かない。
-- MV3 のバックグラウンドは数秒操作がないと休止する（Firefox の既定は 30 秒）。休止中でも、ページ本体の読み込みでバックグラウンドが起動して転送されること、休止・再開後も許可が残ることを E2E テストで確認した。
+- MV3 のバックグラウンドは、しばらく操作がないと休止する（Firefox の既定は 30 秒）。休止中でも、ページ本体の読み込みでバックグラウンドが起動して転送されること、休止・再開後も許可が残ることを E2E テストで確認した。
 - 外部への通信は一切しない（`data_collection_permissions: none`）。
-- 設定ページ（`extension/setup/`、アドオンの管理画面の「設定」からも開ける）で、アクセント付きの紛らわしいドメインへの警告を切り替えられる（既定は警告する。設定は `storage.local`）。
+- 設定ページ（`extension/setup/`）で、アクセント付きの紛らわしいドメインを警告するかを切り替えられる。既定は警告する。設定は `storage.local` に保存する。設定ページはアドオンの管理画面からも開ける。
 - プライベートウィンドウでは、Firefox の既定で拡張機能が動かない。インストール時に許可されていなければ設定ページを開いて案内する。
 
 ### 警告ページの保護
@@ -25,7 +25,7 @@
 - バックグラウンドは、タブの最上位フレームに表示された自分の警告ページからのメッセージだけを受け付ける。
 - 他のページに埋め込まれた場合は操作ボタンを出さない。CSP に `frame-ancestors 'none'` も指定している（Firefox が拡張機能ページの CSP でこれを有効にするかは未確認。E2E テストでは埋め込んだ警告ページは実行されなかった）。
 - 移動先にリファラーを渡さない（`no-referrer`）。
-- blocking リスナーで例外や reject が起きると、Firefox は要求をそのまま続行する（`toolkit/components/extensions/webrequest/WebRequest.sys.mjs` の `applyChanges`）。そのため、判定やトークンの保存に失敗した場合は、トークンなし（＝そこからは開けない）の警告ページへ転送し、読み込ませない。設定を読み込めない場合も警告する側に倒す。
+- blocking リスナーで例外や reject が起きると、Firefox は要求をそのまま続行する（`toolkit/components/extensions/webrequest/WebRequest.sys.mjs` の `applyChanges`）。そのため、判定やトークンの保存に失敗した場合は、トークンのない警告ページへ転送し、ページを読み込ませない。トークンがないので、その警告ページからはサイトを開けない。設定を読み込めない場合も警告する。
 - トークンはタブごとに 1 つだけ残し、期限切れは発行時に消す。許可はトークンを消費してから保存し、どちらかが失敗したら許可しない。
 
 ## 判定ルール
@@ -40,7 +40,7 @@
 | デコード不能 | `xn--` ラベルを Punycode として解読できない | |
 
 - ラテン文字と日本語・中国語・韓国語の組み合わせ（`abc漢字`、`ひらがなabc`）は Highly Restrictive に含まれるので警告しない。
-- Firefox 自身も混在したラベルを Punycode で表示するが、すべて同じ文字体系で書かれた紛らわしいドメイン（例: `ѕсоре`）は許している（[MozillaWiki: IDN Display Algorithm](https://wiki.mozilla.org/IDN_Display_Algorithm)、最終更新 2017 年。現行の Firefox の動作は未確認）。この拡張機能は、そうしたドメインも ASCII に見えるかどうかで検出する。
+- Firefox 自身も混在したラベルを Punycode で表示するが、すべて同じ文字体系で書かれた紛らわしいドメイン（例: `ѕсоре`）は許している。出典は [MozillaWiki: IDN Display Algorithm](https://wiki.mozilla.org/IDN_Display_Algorithm)（最終更新 2017 年）で、現行の Firefox の動作は未確認。この拡張機能は、そうしたドメインも ASCII に見えるかどうかで検出する。
 - 既知の誤検知: すべての文字が ASCII と見分けにくいキリル文字の正規ドメイン（例: `сбер.рф` → `c6ep`、`рус.рф` → `pyc`）と、アクセント付きのラテン文字の正規ドメイン（例: `münchen.de`。設定で無効にできる）。警告から開くことはできる。
 - 実装上の省略: skeleton の bidi 並べ替え（右から左へ書く文字を含むラベルでは近似）、識別子プロファイルの検査（IDNA 側の制約に任せる）、5.3 Mixed-Number Detection。
 
@@ -73,7 +73,7 @@
    HEAD を `git archive` で書き出し、展開したものの `extension/` に署名する。ソース一式（`dist/source-<版>-<コミット>.zip`）も一緒に提出する。署名済みの `.xpi` は `dist/` に保存され、提出した `extension/` と一致するかを照合する（`manifest.json` は署名時に書式が変わるため JSON の内容で比べる）。
 4. 自分で配布する場合は、Firefox の「アドオンとテーマ」（about:addons）の歯車メニューの「Install Add-on From File」で `.xpi` を選ぶ（手順は [Installing self-distributed extensions](https://extensionworkshop.com/documentation/publish/install-self-distributed/) の英語表記）。
 
-注意:
+#### 注意
 
 - 同じ版番号は再提出できない。更新するときは `extension/manifest.json` の `version` を上げてコミットする。
 - 拡張機能の ID（`url-homoglyph-guard@local.invalid`）は署名すると変えられない（変えると別の拡張機能になる）。
