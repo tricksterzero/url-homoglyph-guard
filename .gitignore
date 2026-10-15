@@ -1,0 +1,4 @@
+dist/
+__pycache__/
+extension/.web-extension-id
+extension/.amo-upload-uuid

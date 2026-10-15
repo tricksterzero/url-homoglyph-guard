@@ -32,7 +32,7 @@
 - 警告ページの「開かずに戻る」ボタン
 - ホスト権限が外れているときの案内ページ（`extension/setup/`）
 - アドレスバーへの入力・ブックマーク・他のアプリから開いた場合の実機での動作
-- 署名して常用インストールした状態での動作
+- 署名して常用インストールした状態での動作（`tools/sign.py` の AMO への提出部分も未実行）
 
 ## 使い方
 
@@ -43,9 +43,26 @@
 
 ボタン名は [Temporary installation in Firefox](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/) の英語表記（日本語版 Firefox での表示名は未確認）。一時インストールした拡張機能は、削除するか Firefox を再起動するまで有効。
 
-### 常用する
+### 常用する（署名してインストール）
 
 リリース版の Firefox では、Mozilla の署名が必要。AMO に公開せず自分だけで使う（unlisted）場合も署名を受けられる（[Signing and distribution overview](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/)）。
+
+1. https://addons.mozilla.org/developers/addon/api/key/ で API キー（JWT issuer と JWT secret）を発行する。
+2. 自分のターミナルで `python tools/save_amo_credentials.py` を実行し、2 つの値を入力する。シークレットは画面に表示されない。保存先は `~/.amo/credentials.json` で、`~/.amo` は現在のユーザーだけがアクセスできる権限になる。
+3. 変更をすべてコミットしてから `python tools/sign.py` を実行する。HEAD を `git archive` で書き出し、展開したものの `extension/` に署名する。ソース一式（`dist/source-<版>-<コミット>.zip`）も一緒に提出する。署名済みの `.xpi` は `dist/` に保存される。
+4. Firefox の「アドオンとテーマ」（about:addons）を開き、歯車メニューの「Install Add-on From File」で `.xpi` を選び、「Add」を押す（手順は [Installing self-distributed extensions](https://extensionworkshop.com/documentation/publish/install-self-distributed/) の英語表記）。
+
+注意:
+
+- 同じ版番号は再提出できない。更新するときは `extension/manifest.json` の `version` を上げてコミットする。
+- `update_url` を付けていないので自動更新はされない。新しい版は同じ手順でインストールし直す。
+- 拡張機能の ID（`url-homoglyph-guard@local.invalid`）は署名すると変えられない（変えると別の拡張機能になる）。
+
+### 審査担当者向けのビルド手順（提出ソースに含まれる）
+
+- 環境: Windows 11、Python 3.14（標準ライブラリのみ）。
+- `extension/data/*.js` は、同梱の `data/unicode/*.txt`（Unicode 18.0.0 の原本）から `python tools/build_data.py` で生成する。原本は再取得しない（`tools/fetch_unicode_data.py` は原本の更新用）。
+- 生成後の `extension/` ディレクトリをそのまま ZIP にしたものが拡張機能のパッケージ（`web-ext build --source-dir extension` と同じ）。ほかに変換・圧縮・バンドルはしていない。
 
 ## 開発
 
