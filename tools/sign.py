@@ -111,9 +111,16 @@ def verify_xpi(xpi: pathlib.Path, extension_dir: pathlib.Path) -> None:
             for name in archive.namelist()
             if not name.endswith("/") and not name.startswith("META-INF/")
         }
-    if actual != expected:
-        missing, extra = expected.keys() - actual.keys(), actual.keys() - expected.keys()
-        changed = {k for k in expected.keys() & actual.keys() if expected[k] != actual[k]}
+    # 署名済みの manifest.json は書式が変わって返ってくる（日本語が \\uXXXX になり、インデントも変わる。
+    # 0.1.0 の署名で確認）。manifest.json だけは JSON として読んだ内容で比べ、ほかはバイト単位で比べる
+    def same(name: str) -> bool:
+        if name == "manifest.json":
+            return json.loads(expected[name]) == json.loads(actual[name])
+        return expected[name] == actual[name]
+
+    missing, extra = expected.keys() - actual.keys(), actual.keys() - expected.keys()
+    changed = {name for name in expected.keys() & actual.keys() if not same(name)}
+    if missing or extra or changed:
         fail(f"署名済み .xpi の内容が一致しません（不足 {sorted(missing)}, 余分 {sorted(extra)}, 相違 {sorted(changed)}）")
 
 
