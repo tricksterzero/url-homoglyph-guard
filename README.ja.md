@@ -75,7 +75,7 @@
 
 #### 注意
 
-- 同じ版番号は再提出できない。更新するときは `extension/manifest.json` の `version` を上げてコミットする。
+- 同じバージョン番号は再提出できない。更新するときは `extension/manifest.json` の `version` を上げてコミットする。
 - 拡張機能の ID（`url-homoglyph-guard@local.invalid`）は署名すると変えられない（変えると別の拡張機能になる）。
 
 ## 開発
