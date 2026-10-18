@@ -53,6 +53,10 @@
 
 ## 使い方
 
+### インストール
+
+[Firefox Add-ons（AMO）](https://addons.mozilla.org/ja/firefox/addon/url-homoglyph-guard/)からインストールできる。
+
 ### 試す（一時インストール）
 
 1. Firefox で `about:debugging` を開き、「This Firefox」を選ぶ。

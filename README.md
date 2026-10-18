@@ -6,6 +6,10 @@ A Firefox extension (Manifest V3) that warns you **before a page loads** when it
 
 For example, `аmazon.com` starts with the Cyrillic letter `а` (U+0430). Its real name is `xn--mazon-3ve.com`, a different site from `amazon.com`.
 
+## Install
+
+Install it from [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/url-homoglyph-guard/).
+
 ## How it works
 
 - A blocking `webRequest.onBeforeRequest` listener (`types: ["main_frame"]`) sees every top-level page request before it is sent. Firefox passes hostnames in Punycode form (`xn--...`), so only hostnames containing `xn--` are decoded and analyzed.
